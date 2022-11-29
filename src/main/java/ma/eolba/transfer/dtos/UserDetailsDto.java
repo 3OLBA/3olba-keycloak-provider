@@ -26,4 +26,10 @@ public class  UserDetailsDto implements Serializable {
 	private String email;
 	private String phoneNumber;
 	private String statut;
+
+	public UserDetailsDto(String username, String role, String email) {
+		this.username = username;
+		this.role = role;
+		this.email = email;
+	}
 }

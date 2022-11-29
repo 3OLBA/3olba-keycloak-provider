@@ -11,6 +11,8 @@ import org.keycloak.representations.IDToken;
 import java.util.ArrayList;
 import java.util.List;
 
+import static ma.eolba.transfer.constante.Constante.PERSON;
+
 public class UserDetailsMapper extends AbstractOIDCProtocolMapper implements OIDCAccessTokenMapper, OIDCIDTokenMapper, UserInfoTokenMapper {
 
     /*
@@ -58,7 +60,8 @@ public class UserDetailsMapper extends AbstractOIDCProtocolMapper implements OID
 
     @Override
     protected void setClaim(IDToken token, ProtocolMapperModel mappingModel, UserSessionModel userSession, KeycloakSession keycloakSession, ClientSessionContext clientSessionCtx) {
-        OIDCAttributeMapperHelper.mapClaim(token, mappingModel, userSession.getUser().getAttributes().get("userDetails"));
+        System.out.println(" ===================================== Set Claim =====================================");
+        OIDCAttributeMapperHelper.mapClaim(token, mappingModel, userSession.getUser().getAttributes().get(PERSON));
     }
 
 

@@ -18,6 +18,8 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserCredentialModel;
 import org.keycloak.models.UserModel;
+import org.keycloak.protocol.oidc.mappers.AbstractOIDCProtocolMapper;
+import org.keycloak.provider.ProviderConfigProperty;
 import org.keycloak.storage.ReadOnlyException;
 import org.keycloak.storage.StorageId;
 import org.keycloak.storage.UserStorageProvider;
@@ -29,12 +31,13 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
+import java.lang.reflect.Field;
 import java.net.URLDecoder;
 import java.util.*;
 
 import static ma.eolba.transfer.constante.Constante.*;
 
-public class PropertyFileUserStorageProvider
+public class PropertyFileUserStorageProvider extends AbstractOIDCProtocolMapper
         implements UserStorageProvider, UserLookupProvider, CredentialInputValidator, CredentialInputUpdater {
 
     private final Logger logger = Logger.getLogger(PropertyFileUserStorageProvider.class);
@@ -109,37 +112,30 @@ public class PropertyFileUserStorageProvider
             PersonDTO personToReturn = new PersonDTO();
             logger.info("mapCredentials => " + mapCredentials);
             logger.info("perso => " + mapCredentials.get("person"));
-            if(mapCredentials != null && mapCredentials.get("person") != null){
+            if(mapCredentials != null && mapCredentials.get(PERSON) != null){
                 logger.info("map is not null ");
-                personToReturn = (PersonDTO) mapCredentials.get(PERSO);
+                personToReturn = (PersonDTO) mapCredentials.get(PERSON);
                 String success = (String) mapCredentials.get(SUCCESS);
                 isAuthenticated = TRUE.equals(success);
-
-                logger.warn("status of " + username + " is ==> " + success);
-
+                logger.info("status of " + username + " is ==> " + success);
             }else {
-                logger.warn("map or userDetails is null ");
+                logger.info("map or userDetails is null ");
             }
-//            userModel.setEmail(personToReturn.getEmail());
-//            userModel.setUsername(personToReturn.getUsername());
-//            userModel.setEnabled(true);
-//            userModel.setEmailVerified(true);
-//            userModel.setSingleAttribute("perso", String.valueOf(personDTO));
-            logger.warn("get values ");
-            logger.info(String.valueOf(userModel.getAttributes().get("person")));
+//            userModel.setEmail("ffffff");
+            logger.info(" ######################################### get values #########################################");
+            logger.info(String.valueOf(userModel.getAttributes().get(PERSON)));
             logger.info(String.valueOf(userModel.getAttributes().get("authorities")));
-            logger.info(String.valueOf(userModel.getAttributes()));
-
-//            userModel.getAttributes().get("userDetails").get(0);
-//            userModel.getAttributes().get("authorities").get(0) ;
-
-            logger.warn("inside is valide authentication success");
         } catch (Exception e) {
             logger.warn("inside Exception ");
             logger.warn(" Exception Message : " + e.getMessage());
             e.printStackTrace();
         }
         logger.info("isAuthenticated  => " + isAuthenticated);
+        StorageId storageId = new StorageId(userModel.getId());
+        logger.info("storageId  => " + storageId);
+        String username = storageId.getExternalId();
+        getUserByUsername(username,realmModel);
+
 
         return isAuthenticated;
 
@@ -151,17 +147,27 @@ public class PropertyFileUserStorageProvider
     }
 
     @Override
+    public String getId() {
+        return null;
+    }
+
+    @Override
     public UserModel getUserById(String id, RealmModel realmModel) {
+        logger.info("GET USER BY ID");
         StorageId storageId = new StorageId(id);
         String username = storageId.getExternalId();
+        logger.info("username " + username);
         return getUserByUsername(username, realmModel);
     }
 
     @Override
     public UserModel getUserByUsername(String username, RealmModel realmModel) {
         UserModel adapter = loadedUsers.get(username);
+        logger.info("getUserByUsername =>  adapter " + adapter);
+
 
         if (adapter == null) {
+            logger.info("adapter is null");
 
             adapter = createAdapter(realmModel, username);
             loadedUsers.put(username, adapter);
@@ -189,13 +195,13 @@ public class PropertyFileUserStorageProvider
             @Override
             public Map<String, List<String>> getAttributes() {
 
-                logger.warn("inside getAttributes");
+                logger.info(" ================================== inside getAttributes ==================================");
                 List<String> authorities = new ArrayList<>();
                 MultivaluedHashMap userCredentials = new MultivaluedHashMap<String, Object>();
 
-                if (mapCredentials == null || mapCredentials.get("userDetails") == null) {
+                if (mapCredentials == null || mapCredentials.get(PERSON) == null) {
                     logger.warn("mapCredentials is null ");
-                    UserDetailsDto userDetails = null;
+                    PersonDTO userDetails = null;
                     HttpRequest req = keycloakSession.getContext().getContextObject(HttpRequest.class);
 
                     logger.warn("get token from request");
@@ -215,14 +221,7 @@ public class PropertyFileUserStorageProvider
                             ObjectMapper mapper=new ObjectMapper();
                             Map map = mapper.readValue(body, Map.class);
                             logger.warn("constract userDetail");
-                            userDetails = mapper.convertValue(map.get("userDetails"), UserDetailsDto.class);
-                            String switchedContratId = req.getFormParameters().getFirst("contratId");
-//                            if (switchedContratId != null &&
-//                                    !switchedContratId.isEmpty() &&
-//                                    !switchedContratId.equals(userDetails.getContratId().toString())) {
-//                                userDetails.setContratId(Long.parseLong(switchedContratId));
-//                            }
-
+                            userDetails = mapper.convertValue(map.get(PERSON), PersonDTO.class);
                             logger.warn("constract authorities");
                             authorities = mapper.convertValue(map.get("authorities"), List.class);
 
@@ -237,16 +236,22 @@ public class PropertyFileUserStorageProvider
 
                     userCredentials.add("authorities", authorities);
                     userCredentials.add("userDetails", userDetails);
-                }else{
-                    UserDetailsDto userDetails = (UserDetailsDto) mapCredentials.get("userDetails");
+                }
+                else{
+                    PersonDTO personDTO = (PersonDTO) mapCredentials.get(PERSON);
+                    String success = (String) mapCredentials.get(SUCCESS);
 
-                    logger.warn("mapCredentials is not null " + userDetails.getStatut());
+                    logger.warn("mapCredentials is not null " + success);
 
                     userCredentials.add("authorities", mapCredentials.get("authorities"));
+                    userCredentials.add("person", mapCredentials.get("PERSON"));
                     userCredentials.add("userDetails", mapCredentials.get("userDetails"));
+                    userCredentials.add(PERSON, personDTO);
+                    userCredentials.add(SUCCESS, success);
                 }
 
-                logger.warn(" return userCredentials  " + userCredentials.size());
+                logger.info("  userCredentials size " + userCredentials.size());
+                logger.info("  userCredentials  " + userCredentials);
                 return userCredentials;
 
             }
@@ -264,60 +269,35 @@ public class PropertyFileUserStorageProvider
         HttpHeaders headers = new HttpHeaders();
         RestTemplate restTemplate = new RestTemplate();
         HttpEntity<PersonDTO> request;
-
         try {
-
             headers.setContentType(MediaType.APPLICATION_JSON);
             request = new HttpEntity<>(personDTO, headers);
-
             logger.info("Send request");
-            logger.info("Person" + personDTO);
-            logger.info("rRequest" + request);
-
             response = restTemplate.postForEntity(  "http://localhost:5055/login/sign-in", request, Map.class);
             logger.info("Response : "+response);
 
             if(response.getStatusCode().is2xxSuccessful()) {
-
                 logger.info("response success");
-
                 map = (Map<String, Object>) response.getBody();
-
                 ObjectMapper mapper = new ObjectMapper();
-                logger.info("Befor map response");
-                PersonDTO person = mapper.convertValue(map.get(OBJECT), PersonDTO.class) ;
+                PersonDTO person = mapper.convertValue(map.get(OBJECT), PersonDTO.class);
+                UserDetailsDto userDetailsDto = new UserDetailsDto(person.getUsername(),person.getRole(),person.getEmail());
                 String success = mapper.convertValue(map.get(SUCCESS), String.class) ;
-                logger.info("Map response Success");
-
                 logger.info("Status is : " + success);
-
                 if(TRUE.equals(success)){
-
-                    logger.info("Befor get Authorities");
-//                    List<String> authorities = user.getAuthorities();
-
-                    logger.info("Set Authorities + userdetail in userCredentials");
                     List<String> authorities = new ArrayList<>();
                     authorities.add(person.getRole());
-                    mapCredentials.put("userDetails", person);
+                    mapCredentials.put("userDetails", userDetailsDto);
                     mapCredentials.put("authorities",authorities);
                     mapCredentials.put("person", person);
                     mapCredentials.put("success", success);
-
-                    logger.info("Set Authorities null in userdetail");
-//                    user.setAuthorities(null);
-
                 }else{
                     mapCredentials.put("authorities", null);
                     mapCredentials.put("userDetails", null);
                 }
-
-
             }else{
                 logger.info("request failed with status " + response.getStatusCode());
             }
-
-
         } catch (UnauthorizedException e) {
             logger.info("failed with UnauthorizedException " + e.getMessage());
             mapCredentials.put("authorities", null);
@@ -334,4 +314,23 @@ public class PropertyFileUserStorageProvider
 
     }
 
+    @Override
+    public String getDisplayCategory() {
+        return null;
+    }
+
+    @Override
+    public String getDisplayType() {
+        return null;
+    }
+
+    @Override
+    public String getHelpText() {
+        return null;
+    }
+
+    @Override
+    public List<ProviderConfigProperty> getConfigProperties() {
+        return null;
+    }
 }

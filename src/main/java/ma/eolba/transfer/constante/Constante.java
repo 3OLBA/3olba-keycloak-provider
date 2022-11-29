@@ -7,7 +7,7 @@ public class Constante {
     public static final String ADMIN                              = "admin";
     public static final String SUCCESS                            = "success";
     public static final String TRUE                               = "true";
-    public static final String PERSO                              = "perso";
+    public static final String PERSON                              = "person";
     public static final String PASSWORD                           = "password";
     public static final String USERNAME                           = "username";
     public static final String EMAIL                              = "email";

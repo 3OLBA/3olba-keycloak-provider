@@ -27,6 +27,7 @@ public class PropertyFileUserStorageProviderFactory
 
     @Override
     public PropertyFileUserStorageProvider create(KeycloakSession session, ComponentModel model) {
+        logger.info("========================================== create ==========================================");
         return new PropertyFileUserStorageProvider(session, model);
     }
 }

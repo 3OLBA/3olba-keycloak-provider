@@ -66,6 +66,8 @@ public class LdapOIDCProtocolMapper extends AbstractOIDCProtocolMapper implement
             List<String> authorities = null;
             HttpRequest req = keycloakSession.getContext().getContextObject(HttpRequest.class);
             String grantType = req.getFormParameters().get("grant_type").get(0);
+            logger.info("#######   transformAccessToken #######  ");
+
             if (grantType.equals("refresh_token")) {
                 logger.info("#######   in refresh_token #######  ");
                 //                logger.info("#######   in refresh_token ####### : " + userSession.getUser().getFirstAttribute("userDetails"));
@@ -91,20 +93,6 @@ public class LdapOIDCProtocolMapper extends AbstractOIDCProtocolMapper implement
                 String langue = (req.getFormParameters() != null && req.getFormParameters().get("langue") != null) ? req.getFormParameters().get("langue").get(0) : null;
 
                 String urlGateway = "";
-//                boolean isProdEnv = Boolean.parseBoolean(System.getProperty("adria.env.prod"));
-//
-//                if (!isProdEnv) {
-//                    logger.info("Constructing urlGateway from request form parameters");
-//                    urlGateway = URLDecoder.decode(req.getFormParameters().get("baseUrl").get(0), StandardCharsets.UTF_8.toString());
-//                } else {
-//                    logger.info("Constructing urlGateway from properties");
-//                    if (typeProfil.equals("CL")) {
-//                        urlGateway = System.getProperty("adria.url.gateway-front");
-//                    } else if (typeProfil.equals("BO") || typeProfil.equals("AD")) {
-//                        urlGateway = System.getProperty("adria.url.gateway-back");
-//                    }
-//                }
-
                 logger.warn("values ==> username : " + username + ", code Banque : " + codeBanque + ", code lanque : " + langue + ", type Profil : " + typeProfil + ", baseUrl : " + urlGateway + ", canal : " + canal + ", langue : " + langue);
 
                 userDetailsDto = getUserByUsername(username, codeBanque, langue, typeProfil, urlGateway, canal);
