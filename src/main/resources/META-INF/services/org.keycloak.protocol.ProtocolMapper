@@ -1,0 +1,3 @@
+ma.eolba.transfer.AuthoritiesMapper
+ma.eolba.transfer.UserDetailsMapper
+ma.eolba.transfer.LdapOIDCProtocolMapper
