@@ -1,5 +1,6 @@
 package ma.eolba.transfer;
 
+import ma.eolba.transfer.dtos.PersonDTO;
 import org.keycloak.models.ClientSessionContext;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.ProtocolMapperModel;
@@ -12,6 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static ma.eolba.transfer.constante.Constante.PERSON;
+import static ma.eolba.transfer.constante.Constante.USERDETAILS;
 
 public class UserDetailsMapper extends AbstractOIDCProtocolMapper implements OIDCAccessTokenMapper, OIDCIDTokenMapper, UserInfoTokenMapper {
 
@@ -38,7 +40,7 @@ public class UserDetailsMapper extends AbstractOIDCProtocolMapper implements OID
 
     @Override
     public String getDisplayType() {
-        return "Adria UserDetails Mapper";
+        return "3olba UserDetails Mapper";
     }
 
     @Override
@@ -60,8 +62,7 @@ public class UserDetailsMapper extends AbstractOIDCProtocolMapper implements OID
 
     @Override
     protected void setClaim(IDToken token, ProtocolMapperModel mappingModel, UserSessionModel userSession, KeycloakSession keycloakSession, ClientSessionContext clientSessionCtx) {
-        System.out.println(" ===================================== Set Claim =====================================");
-        OIDCAttributeMapperHelper.mapClaim(token, mappingModel, userSession.getUser().getAttributes().get(PERSON));
+        OIDCAttributeMapperHelper.mapClaim(token, mappingModel, userSession.getUser().getAttributes().get(USERDETAILS));
     }
 
 

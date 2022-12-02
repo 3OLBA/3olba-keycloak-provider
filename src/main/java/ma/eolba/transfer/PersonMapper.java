@@ -10,31 +10,25 @@ import org.keycloak.representations.IDToken;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Logger;
 
-import static ma.eolba.transfer.constante.Constante.AUTHORITIES;
+import static ma.eolba.transfer.constante.Constante.PERSON;
 
-
-public class AuthoritiesMapper extends AbstractOIDCProtocolMapper implements OIDCAccessTokenMapper, OIDCIDTokenMapper, UserInfoTokenMapper {
+public class PersonMapper extends AbstractOIDCProtocolMapper implements OIDCAccessTokenMapper, OIDCIDTokenMapper, UserInfoTokenMapper {
 
     /*
      * A config which keycloak uses to display a generic dialog to configure the token.
      */
     private static final List<ProviderConfigProperty> configProperties = new ArrayList<>();
 
-    Logger logger = Logger.getLogger("logger");
-
     /*
      * The ID of the token mapper. Is public, because we need this id in our data-setup project to
      * configure the protocol mapper in keycloak.
      */
-    public static final String PROVIDER_ID = "oidc-authorities-mapper";
+    public static final String PROVIDER_ID = "oidc-person-mapper";
 
     static {
-
         OIDCAttributeMapperHelper.addTokenClaimNameConfig(configProperties);
-
-        OIDCAttributeMapperHelper.addIncludeInTokensConfig(configProperties,  AuthoritiesMapper.class);
+        OIDCAttributeMapperHelper.addIncludeInTokensConfig(configProperties, PersonMapper.class);
     }
 
     @Override
@@ -44,7 +38,7 @@ public class AuthoritiesMapper extends AbstractOIDCProtocolMapper implements OID
 
     @Override
     public String getDisplayType() {
-        return "3olba Authorities Mapper";
+        return "3olba Person Mapper";
     }
 
     @Override
@@ -62,11 +56,12 @@ public class AuthoritiesMapper extends AbstractOIDCProtocolMapper implements OID
         return PROVIDER_ID;
     }
 
+
+
     @Override
     protected void setClaim(IDToken token, ProtocolMapperModel mappingModel, UserSessionModel userSession, KeycloakSession keycloakSession, ClientSessionContext clientSessionCtx) {
-        OIDCAttributeMapperHelper.mapClaim(token, mappingModel, userSession.getUser().getAttributes().get(AUTHORITIES));
+        OIDCAttributeMapperHelper.mapClaim(token, mappingModel, userSession.getUser().getAttributes().get(PERSON));
     }
-
 
 
 }

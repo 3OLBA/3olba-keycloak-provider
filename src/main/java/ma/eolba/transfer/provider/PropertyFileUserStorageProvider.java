@@ -18,8 +18,6 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserCredentialModel;
 import org.keycloak.models.UserModel;
-import org.keycloak.protocol.oidc.mappers.AbstractOIDCProtocolMapper;
-import org.keycloak.provider.ProviderConfigProperty;
 import org.keycloak.storage.ReadOnlyException;
 import org.keycloak.storage.StorageId;
 import org.keycloak.storage.UserStorageProvider;
@@ -31,13 +29,13 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
-import java.lang.reflect.Field;
+import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.*;
 
 import static ma.eolba.transfer.constante.Constante.*;
 
-public class PropertyFileUserStorageProvider extends AbstractOIDCProtocolMapper
+public class PropertyFileUserStorageProvider
         implements UserStorageProvider, UserLookupProvider, CredentialInputValidator, CredentialInputUpdater {
 
     private final Logger logger = Logger.getLogger(PropertyFileUserStorageProvider.class);
@@ -98,17 +96,12 @@ public class PropertyFileUserStorageProvider extends AbstractOIDCProtocolMapper
 
             logger.info("get values ");
 
-            String password = req.getFormParameters().get(PASSWORD).get(0);
-            password = URLDecoder.decode(password, "UTF-8");
-            String username = req.getFormParameters().get(USERNAME).get(0);
-            String email = req.getFormParameters().get(EMAIL).get(0);
-            email = URLDecoder.decode(email, "UTF-8");
-            password = URLDecoder.decode(password, "UTF-8");
-            String typeProfile = req.getFormParameters().get(TYPE_PROFILE).get(0);
-            logger.info(typeProfile);
-            PersonDTO personDTO = new PersonDTO(email,username,password,typeProfile);
-            logger.info(personDTO.toString());
+            PersonDTO personDTO = getParamUser(req);
+
+            if(personDTO == null) return false;
+
             checkUser(personDTO);
+
             PersonDTO personToReturn = new PersonDTO();
             logger.info("mapCredentials => " + mapCredentials);
             logger.info("perso => " + mapCredentials.get("person"));
@@ -117,25 +110,22 @@ public class PropertyFileUserStorageProvider extends AbstractOIDCProtocolMapper
                 personToReturn = (PersonDTO) mapCredentials.get(PERSON);
                 String success = (String) mapCredentials.get(SUCCESS);
                 isAuthenticated = TRUE.equals(success);
-                logger.info("status of " + username + " is ==> " + success);
+                logger.info("status is ==> " + success);
             }else {
                 logger.info("map or userDetails is null ");
             }
-//            userModel.setEmail("ffffff");
-            logger.info(" ######################################### get values #########################################");
+            logger.info(" ######################################### get values from UserModel #########################################");
+            logger.info(String.valueOf(userModel.getAttributes().toString()));
             logger.info(String.valueOf(userModel.getAttributes().get(PERSON)));
-            logger.info(String.valueOf(userModel.getAttributes().get("authorities")));
+            logger.info(String.valueOf(userModel.getAttributes().get(AUTHORITIES)));
+            logger.info(String.valueOf(userModel.getAttributes().get(USERDETAILS)));
+//            userModel.setEmail(personDTO.getEmail());
         } catch (Exception e) {
             logger.warn("inside Exception ");
             logger.warn(" Exception Message : " + e.getMessage());
             e.printStackTrace();
         }
         logger.info("isAuthenticated  => " + isAuthenticated);
-        StorageId storageId = new StorageId(userModel.getId());
-        logger.info("storageId  => " + storageId);
-        String username = storageId.getExternalId();
-        getUserByUsername(username,realmModel);
-
 
         return isAuthenticated;
 
@@ -144,11 +134,6 @@ public class PropertyFileUserStorageProvider extends AbstractOIDCProtocolMapper
     @Override
     public void close() {
 
-    }
-
-    @Override
-    public String getId() {
-        return null;
     }
 
     @Override
@@ -239,14 +224,16 @@ public class PropertyFileUserStorageProvider extends AbstractOIDCProtocolMapper
                 }
                 else{
                     PersonDTO personDTO = (PersonDTO) mapCredentials.get(PERSON);
+                    UserDetailsDto userDetailsDto = (UserDetailsDto) mapCredentials.get(USERDETAILS);
                     String success = (String) mapCredentials.get(SUCCESS);
 
-                    logger.warn("mapCredentials is not null " + success);
+                    logger.warn("mapCredentials is not null");
+                    logger.info("Person =========> " + personDTO);
+                    logger.info("UserDetails =========> "+ userDetailsDto);
 
-                    userCredentials.add("authorities", mapCredentials.get("authorities"));
-                    userCredentials.add("person", mapCredentials.get("PERSON"));
-                    userCredentials.add("userDetails", mapCredentials.get("userDetails"));
+                    userCredentials.add(AUTHORITIES, mapCredentials.get(AUTHORITIES));
                     userCredentials.add(PERSON, personDTO);
+                    userCredentials.add(USERDETAILS, userDetailsDto);
                     userCredentials.add(SUCCESS, success);
                 }
 
@@ -280,20 +267,20 @@ public class PropertyFileUserStorageProvider extends AbstractOIDCProtocolMapper
                 logger.info("response success");
                 map = (Map<String, Object>) response.getBody();
                 ObjectMapper mapper = new ObjectMapper();
-                PersonDTO person = mapper.convertValue(map.get(OBJECT), PersonDTO.class);
-                UserDetailsDto userDetailsDto = new UserDetailsDto(person.getUsername(),person.getRole(),person.getEmail());
                 String success = mapper.convertValue(map.get(SUCCESS), String.class) ;
                 logger.info("Status is : " + success);
                 if(TRUE.equals(success)){
                     List<String> authorities = new ArrayList<>();
+                    PersonDTO person = mapper.convertValue(map.get(OBJECT), PersonDTO.class);
+                    UserDetailsDto userDetailsDto = new UserDetailsDto(person.getUsername(),person.getRole(),person.getEmail());
                     authorities.add(person.getRole());
-                    mapCredentials.put("userDetails", userDetailsDto);
-                    mapCredentials.put("authorities",authorities);
-                    mapCredentials.put("person", person);
-                    mapCredentials.put("success", success);
+                    mapCredentials.put(USERDETAILS, userDetailsDto);
+                    mapCredentials.put(AUTHORITIES,authorities);
+                    mapCredentials.put(PERSON, person);
+                    mapCredentials.put(SUCCESS, success);
                 }else{
-                    mapCredentials.put("authorities", null);
-                    mapCredentials.put("userDetails", null);
+                    mapCredentials.put(AUTHORITIES, null);
+                    mapCredentials.put(USERDETAILS, null);
                 }
             }else{
                 logger.info("request failed with status " + response.getStatusCode());
@@ -314,23 +301,29 @@ public class PropertyFileUserStorageProvider extends AbstractOIDCProtocolMapper
 
     }
 
-    @Override
-    public String getDisplayCategory() {
-        return null;
-    }
+    private PersonDTO getParamUser(HttpRequest req) throws UnsupportedEncodingException {
+        List<String> passwordParam = req.getFormParameters().get(PASSWORD);
+        List<String> usernameParam = req.getFormParameters().get(USERNAME);
+        List<String> emailParam = req.getFormParameters().get(EMAIL);
+        List<String> typeProfileParam = req.getFormParameters().get(TYPE_PROFILE);
+        String username = "";
+        if(passwordParam == null || emailParam == null || typeProfileParam == null){
+            logger.error("Missing params");
+            logger.error("email ===> " + emailParam);
+            logger.error("Password ===> " + passwordParam);
+            logger.error("typeProfile ===> " + typeProfileParam);
+            return null;
+        }
 
-    @Override
-    public String getDisplayType() {
-        return null;
-    }
+        String password = URLDecoder.decode(passwordParam.get(0), "UTF-8");
+        String email = URLDecoder.decode(emailParam.get(0), "UTF-8");
 
-    @Override
-    public String getHelpText() {
-        return null;
-    }
+        if(usernameParam == null){
+            username = email.split("@")[0];
+        }
 
-    @Override
-    public List<ProviderConfigProperty> getConfigProperties() {
-        return null;
+        PersonDTO personDTO = new PersonDTO(email, username, password, typeProfileParam.get(0));
+        logger.info(personDTO.toString());
+        return personDTO;
     }
 }
