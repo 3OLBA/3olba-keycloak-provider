@@ -306,10 +306,11 @@ public class PropertyFileUserStorageProvider
         List<String> usernameParam = req.getFormParameters().get(USERNAME);
         List<String> emailParam = req.getFormParameters().get(EMAIL);
         List<String> typeProfileParam = req.getFormParameters().get(TYPE_PROFILE);
-        String username = "";
+
         if(passwordParam == null || emailParam == null || typeProfileParam == null){
             logger.error("Missing params");
             logger.error("email ===> " + emailParam);
+            logger.error("usernameParam ===> " + usernameParam);
             logger.error("Password ===> " + passwordParam);
             logger.error("typeProfile ===> " + typeProfileParam);
             return null;
@@ -317,13 +318,11 @@ public class PropertyFileUserStorageProvider
 
         String password = URLDecoder.decode(passwordParam.get(0), "UTF-8");
         String email = URLDecoder.decode(emailParam.get(0), "UTF-8");
+        String username = URLDecoder.decode(usernameParam.get(0), "UTF-8");
 
-        if(usernameParam == null){
-            username = email.split("@")[0];
-        }
 
         PersonDTO personDTO = new PersonDTO(email, username, password, typeProfileParam.get(0));
-        logger.info(personDTO.toString());
+        logger.info("PersonDTO before LoginIn ==> " + personDTO);
         return personDTO;
     }
 }
